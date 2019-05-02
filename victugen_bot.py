@@ -1,21 +1,5 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
-# This program is dedicated to the public domain under the CC0 license.
-#
-# THIS EXAMPLE HAS BEEN UPDATED TO WORK WITH THE BETA VERSION 12 OF PYTHON-TELEGRAM-BOT.
-# If you're still using version 11.1.0, please see the examples at
-# https://github.com/python-telegram-bot/python-telegram-bot/tree/v11.1.0/examples
-
-"""
-First, a few callback functions are defined. Then, those functions are passed to
-the Dispatcher and registered at their respective places.
-Then, the bot is started and runs until we press Ctrl-C on the command line.
-Usage:
-Example of a bot-user conversation using ConversationHandler.
-Send /start to initiate the conversation.
-Press Ctrl-C on the command line or send a signal to the process to stop the
-bot.
-"""
 
 import logging
 
@@ -29,27 +13,12 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 
 logger = logging.getLogger(__name__)
 
-CHOOSING, SELECT_VARIANCE, PARSE_GENE , SELECT_SNR = range(3)
-
-reply_keyboard = [['Age', 'Favourite colour'],
-                  ['Number of siblings', 'Something else...'],
-                  ['Done']]
-markup = telegram.ReplyKeyboardMarkup(reply_keyboard, one_time_keyboard=True)
-
-
-def facts_to_str(user_data):
-    facts = list()
-
-    for key, value in user_data.items():
-        facts.append('{} - {}'.format(key, value))
-
-    return "\n".join(facts).join(['\n', '\n'])
+SELECT_VARIANCE, PARSE_GENE, SELECT_SNR = range(3)
 
 
 def start(update, context):
     update.message.reply_text(
-        'Hi! \n welcome to Victugen report Bot!  \n \n  Please enter the GENE name printed in your report. \n sample : FTO' )
-#  'Hi! \n welcome to <b><a href="http://victugen.com">Victugen</a></b> <br> Please enter the GENE name printed in your report. \n sample : FTO rs1421085' )
+        'Hi! \n welcome to Victugen report Bot!  \n \n  Please enter the GENE name printed in your report. \n sample : FTO')
 
     return PARSE_GENE
 
@@ -57,14 +26,17 @@ def start(update, context):
 def parse_gene(update, context):
     text = update.message.text
     context.user_data['gene'] = text
-    
-    if '-' not in text:
-        update.message.reply_text('PLEASE ENTER THE GENE JUST LIKE WHAT THE SAMPLE BELOW AND THE PRINTED VERSION ON YOUR REPORT!! \n \n here\'s some samples: FTO-rs1421085(CC) , FTO , ')
-        return PARSE_GENE
+    if 'FTO' in text:
+        update.message.reply_text(
+            "so Your Gene type is FTO..! \n👉 here's a fact about FTO genes : \n  '{0}' \n \n \n ⭕️ now please enter the SNR printed in your report.AKA the seccond part of the gene information you have.👇 \n sample rs1421085: ".format(
+                "FTO affects the hypothalamus in the brain, which is a regulator of hunger. People with FTO variations tend to select food with higher energy content (more calories) and which are typically high in saturated fat and sugar."))
+        return SELECT_SNR
     else:
-        gene = text.split('-')
-        update.message.reply_text('So your gene is {} and the SNR is {}'.format(gene[0],gene[1]))
-        return SELECT_VARIANCE
+        update.message.reply_text(
+            'unfortunately there is no related information for the entered gene: {}. we are working on improving our gene database please comback later. you can also hit /start to begin again! best of luck!'.format(
+                text))
+        context.user_data.clear()
+        return ConversationHandler.END
 
 
 def custom_choice(update, context):
@@ -74,35 +46,169 @@ def custom_choice(update, context):
     return PARSE_GENE
 
 
-def received_information(update, context):
-    user_data = context.user_data
+variants = {
+    'rs1421085': ['TT', 'CT', 'CC'],
+    'rs9939609': ['TT', 'TA', 'AA']
+}
+
+variant_detail = {
+    'rs1421085': {
+        'TT': 'You have less tendency to be overweight.',
+        'CT': 'You have a single variation (CT). \n  You have a tendency to be overweight, which is enhanced by eating saturated fat.',
+        'CC': 'You have a double variation (CC). \n You have a high tendency to be overweight, which is intensified by eating saturated fat.',
+    },
+    'rs9939609': {
+        'TT': 'In general, you have lower risk of obesity and developing obesity-related type II diabetes.',
+        'TA': '''You have probably had an increased tendency to be overweight from an early age. 
+In general, you have higher risk of obesity and developing obesity-related type II diabetes
+
+ 
+FTO single
+variations are known to be associated with excess weight, often from childhood. Because you have a single variation, you are 30% more prone to being overweight than people without variations.
+
+ 
+FTO
+affects the hypothalamus in the brain, which is a regulator of hunger. People with FTO variations tend to select food with higher energy content (more calories) and which are typically high in saturated fat and sugar.
+
+Carriers of single variants are shown to have 1.3 times higher risk of type II diabetes.
+
+ 
+The more
+saturated fat you consume, the more the FTO gene sends messages to consume more food and the poorer your sense of satiety becomes. This leads to an even greater sense of hunger. The FTO gene is also associated with having less energy and a lower desire to 
+exercise.
+
+ 
+
+Typical effects of FTO variations:
+
+ 
+- Tendency to be overweight
+-More hunger, less satiety
+
+
+- Less willingness to exercise
+    
+- Having less energy
+   
+- More inclined to choose saturated fat and sugar
+
+
+- Very self-reinforcing – the unhealthier food you have the more you crave
+
+ 
+If you wish to “turn off” the FTO variation, you should:
+
+
+ 
+*    Consume less than 10 grams of saturated fat daily. It is beneficial to have a low-fat diet, but even better to follow a Mediterranean-style diet to lose weight most effectively.
+
+*    
+Eat dairy products (cheese, butter, cream etc.) with caution.  These are particularly high in saturated fats and should be avoided. If you use milk, use skimmed milk.
+*    
+Eat regularly and eat a balanced diet.
+
+     If your body’s nutritional demands are met, you should feel less prone to urgent hunger pangs and overeating. 
+*    
+Exercise regularly!
+
+     There is a correlation between muscle mass and counteracting your FTO variations. Regular exercise will help you counteract the gene variation, burn calories, assist your metabolism and help you to reduce your weight, especially when you have a variation in FTO rs9939609.
+
+ ''',
+        'AA': '''You have probably had a tendency to be overweight from an early age. 
+In general, you have very higher risk of obesity and developing obesity-related type II diabetes.
+
+ 
+FTO double
+variations are known to be associated with excess weight, often from childhood. Because you have a double variation, you are 70% more prone to being overweight than people without 
+variations.
+Carriers of the double variants have shown a 1.6 times higher risk of developing type II diabetes. 
+
+
+ 
+FTO
+affects the hypothalamus in the brain, which is a regulator of hunger. People with FTO variations tend to select food with higher energy content (more calories) and which are typically high in saturated fat and sugar.
+
+ 
+The more
+saturated fat you consume, the more the FTO gene sends messages to consume more food and the poorer your sense of satiety becomes. This leads to an even greater sense of hunger. The FTO gene is also associated with having less energy and a lower desire to 
+exercise.
+
+ 
+
+Typical effects of FTO variations:
+
+ 
+*    
+Tendency to be overweight
+*    
+More hunger, less satiety
+*    
+Less willingness to exercise
+*    
+Having less energy
+*    
+More inclined to choose saturated fat and sugar
+*    
+Very self-reinforcing – the unhealthier food you have the more you crave 
+
+ 
+
+If you wish to “turn off” the FTO variation, you should:
+
+ 
+*    Consume less than 10 grams of saturated fat daily. It is beneficial to have a low-fat diet, but even better to follow a Mediterranean-style diet to lose weight most effectively.
+
+*    
+Eat dairy products (cheese, butter, cream etc.) with caution.  These are particularly high in saturated fats and should be avoided. If you use milk, use skimmed milk.
+*    
+Eat regularly and eat a balanced diet.
+
+If your body’s nutritional demands are met, you should feel less prone to urgent hunger pangs and overeating.
+
+*    
+Exercise regularly!
+*    
+There is a correlation between muscle mass and counteracting your FTO variations. Regular exercise will help you counteract the gene variation, burn calories, assist your metabolism and help you to reduce your weight, especially when you have a variation in FTO rs9939609.
+''',
+    }
+}
+
+
+def parse_snr(update, context):
     text = update.message.text
-    category = user_data['choice']
-    user_data[category] = text
-    del user_data['choice']
+    context.user_data['snr'] = text
+    snrs = ['rs1421085', 'rs9939609']
+    print('\n \n the full gene is : {0}-{1}(?)'.format(context.user_data['gene'], text))
 
-    update.message.reply_text("Neat! Just so you know, this is what you already told me:"
-                              "{}"
-                              "You can tell me more, or change your opinion on something.".format(
-                                  facts_to_str(user_data)), reply_markup=markup)
+    if not text in snrs:
+        update.message.reply_text(
+            'unfortunately there is no related information for the entered gene: {}. we are working on improving our gene database please comeback later. you can also hit /start to begin again! best of luck!'.format(
+                text))
+        context.user_data.clear()
+        return ConversationHandler.END
+    else:
+        genesnr = '{0}-{1}'.format(context.user_data['gene'], text)
+        update.message.reply_text(
+            '🧬 There are many varioations for your gene, \n the last step is to select the variation! please enter the variation for the gene (📝 you can find it on your DNA test report as well!) \n \n here is the available variations for {0} : {1}'
+                .format(text, ' , '.join(variants[text])))
+        return SELECT_VARIANCE
 
-    return CHOOSING
 
-def parse_snr(update,context):
-    pass
-
-def done(update, context):
-    user_data = context.user_data
-    if 'choice' in user_data:
-        del user_data['choice']
-
-    update.message.reply_text("I learned these facts about you:"
-                              "{}"
-                              "Until next time!".format(facts_to_str(user_data)))
-
-    user_data.clear()
-    return ConversationHandler.END
-
+def select_variance(update, context):
+    text = update.message.text
+    context.user_data['variant'] = text
+    snr = context.user_data['snr']
+    print('\n \n the full gene is : {0}-{1}({2})'.format(context.user_data['gene'], context.user_data['snr'], text))
+    if text not in variants[snr]:
+        update.message.reply_text(
+            'unfortunately there is no related information for the entered variation. we are working on improving our gene database please comeback later. you can also hit /start to begin again! best of luck!'.format(
+                text))
+        context.user_data.clear()
+        return ConversationHandler.END
+    else:
+        update.message.reply_text('🔰 Here is some information about your type {0}-{1}({2}) : {3} '
+                                  .format(context.user_data['gene'], context.user_data['snr'], text,variant_detail[snr][text]))
+        return ConversationHandler.END
 
 def error(update, context):
     """Log Errors caused by Updates."""
@@ -124,28 +230,22 @@ def main():
         entry_points=[CommandHandler('start', start)],
 
         states={
-            SELECT_SNR : [MessageHandler(Filters.text,
-                                           parse_snr,
-                                           pass_user_data=True),],
-            CHOOSING: [RegexHandler('^(Age|Favourite colour|Number of siblings)$',
-                                    parse_gene,
-                                    pass_user_data=True),
-                       RegexHandler('^Something else...$',
-                                    custom_choice),
-                       ],
+            SELECT_SNR: [MessageHandler(Filters.text,
+                                        parse_snr,
+                                        pass_user_data=True), ],
 
             PARSE_GENE: [MessageHandler(Filters.text,
-                                           parse_gene,
-                                           pass_user_data=True),
-                            ],
+                                        parse_gene,
+                                        pass_user_data=True),
+                         ],
 
             SELECT_VARIANCE: [MessageHandler(Filters.text,
-                                          received_information,
-                                          pass_user_data=True),
-                           ],
+                                             select_variance,
+                                             pass_user_data=True),
+                              ],
         },
 
-        fallbacks=[RegexHandler('^Done$', done, pass_user_data=True)]
+        fallbacks=[RegexHandler('^Done$', error, pass_user_data=True)]
     )
 
     dp.add_handler(conv_handler)
